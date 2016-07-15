@@ -47,7 +47,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="12dp"
-        android:text="Band Data" />
+        android:text="Band Accel" />
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:text="Band Gyro" />
 
     <TextView
         android:id="@+id/results"

@@ -22,6 +22,8 @@ import com.microsoft.band.BandInfo;
 import com.microsoft.band.ConnectionState;
 import com.microsoft.band.sensors.BandAccelerometerEvent;
 import com.microsoft.band.sensors.BandAccelerometerEventListener;
+import com.microsoft.band.sensors.BandGyroscopeEvent;
+import com.microsoft.band.sensors.BandGyroscopeEventListener;
 import com.microsoft.band.sensors.SampleRate;
 
 import java.io.BufferedReader;
@@ -47,32 +49,59 @@ public class MainActivity extends Activity {
     private TextView textView1 = null;
     private TextView textView2 = null;
     private TextView textView3 = null;
+    private TextView textView4 = null;
     private List mAccelList;
     private List mGyroList;
     private PrintWriter mAccelWriter = null;
     private PrintWriter mGyroWriter = null;
-    private PrintWriter mBandWriter = null;
+    private PrintWriter mBandAccelWriter = null;
+    private PrintWriter mBandGyroWriter = null;
     private FileOutputStream mFileOutputStream = null;
     private File mAccelFile = null;
     private File mGyroFile = null;
-    private File mBandFile = null;
+    private File mBandAccelFile = null;
+    private File mBandGyroFile = null;
     private BandClient client = null;
 
     float[] mSensorValues = null;
 
 
-    private BandAccelerometerEventListener mAccelerometerEventListener = new BandAccelerometerEventListener() {
+    private BandAccelerometerEventListener mBandAccelerometerEventListener = new BandAccelerometerEventListener() {
         @Override
         public void onBandAccelerometerChanged(final BandAccelerometerEvent event) {
-            if (event != null && mBandWriter != null) {
+            if (event != null && mBandAccelWriter != null) {
                 if (mEntriesToWrite > 0) {
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
-                            mBandWriter.println(String.format(" X = %.3f  Y = %.3f Z = %.3f", event.getAccelerationX(), event.getAccelerationY(), event.getAccelerationZ()));
+                            mBandAccelWriter.println(String.format(" X = %.3f  Y = %.3f Z = %.3f", event.getAccelerationX(), event.getAccelerationY(), event.getAccelerationZ()));
                             textView3.post(new Runnable() {
                                 public void run() {
                                     textView3.setText("x: " + mSensorValues[0] + "\ny: " + mSensorValues[1] + "\nz: " + mSensorValues[2]);
+                                }
+                            });
+                        }
+                    }).start();
+                } else {
+                    //can't touch UI thread
+                }
+            }
+        }
+    };
+
+    private BandGyroscopeEventListener mBandGyroscopeEventListener = new BandGyroscopeEventListener() {
+
+        @Override
+        public void onBandGyroscopeChanged(final BandGyroscopeEvent event) {
+            if (event != null && mBandGyroWriter != null) {
+                if (mEntriesToWrite > 0) {
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mBandGyroWriter.println(String.format(" X = %.3f  Y = %.3f Z = %.3f", event.getAccelerationX(), event.getAccelerationY(), event.getAccelerationZ()));
+                            textView4.post(new Runnable() {
+                                public void run() {
+                                    textView4.setText("x: " + mSensorValues[0] + "\ny: " + mSensorValues[1] + "\nz: " + mSensorValues[2]);
                                 }
                             });
                         }
@@ -164,6 +193,7 @@ public class MainActivity extends Activity {
         textView1 = (TextView) findViewById(R.id.textView1);
         textView2 = (TextView) findViewById(R.id.textView2);
         textView3 = (TextView) findViewById(R.id.textView3);
+        textView4 = (TextView) findViewById(R.id.textView4);
         mResultsView = (TextView) findViewById(R.id.results);
         mStartButton = (Button) findViewById(R.id.start);
     }
@@ -190,7 +220,8 @@ public class MainActivity extends Activity {
         super.onPause();
         if (client != null) {
             try {
-                client.getSensorManager().unregisterAccelerometerEventListener(mAccelerometerEventListener);
+                client.getSensorManager().unregisterAccelerometerEventListener(mBandAccelerometerEventListener);
+                client.getSensorManager().unregisterGyroscopeEventListener(mBandGyroscopeEventListener);
             } catch (BandIOException e) {
                 appendToUI(e.getMessage());
             }
@@ -205,7 +236,8 @@ public class MainActivity extends Activity {
             try {
                 if (getConnectedBandClient()) {
                     appendToUI("Band is connected.\n");
-                    client.getSensorManager().registerAccelerometerEventListener(mAccelerometerEventListener, SampleRate.MS32);
+                    client.getSensorManager().registerAccelerometerEventListener(mBandAccelerometerEventListener, SampleRate.MS16);
+                    client.getSensorManager().registerGyroscopeEventListener(mBandGyroscopeEventListener, SampleRate.MS16);
                 } else {
                     appendToUI("Band isn't connected. Please make sure bluetooth is on and the band is in range.\n");
                 }
@@ -307,15 +339,18 @@ public class MainActivity extends Activity {
         mediaFile.mkdirs();
         mAccelFile = new File(mediaFile, "accel_data.txt");
         mGyroFile = new File(mediaFile, "gyro_data.txt");
-        mBandFile = new File(mediaFile, "band_data.txt");
+        mBandAccelFile = new File(mediaFile, "band_accel.txt");
+        mBandGyroFile = new File(mediaFile, "band_gyro.txt");
         try {
             mAccelWriter = new PrintWriter(new BufferedWriter(new FileWriter(mAccelFile), 8192));
             mGyroWriter = new PrintWriter(new BufferedWriter(new FileWriter(mGyroFile), 8192));
-            mBandWriter = new PrintWriter(new BufferedWriter(new FileWriter(mBandFile), 8192));
+            mBandAccelWriter = new PrintWriter(new BufferedWriter(new FileWriter(mBandAccelFile), 8192));
+            mBandGyroWriter = new PrintWriter(new BufferedWriter(new FileWriter(mBandGyroFile), 8192));
             //write header for CSV
             mAccelWriter.println("Accelerometer X, AccelerometerY, Accelerometer Z");
             mGyroWriter.println("Gyroscope X, Gyroscope Y, Gyroscope Z");
-            mBandWriter.println("Accelerometer X, AccelerometerY, Accelerometer Z");
+            mBandAccelWriter.println("Accelerometer X, AccelerometerY, Accelerometer Z");
+            mBandGyroWriter.println("Gyroscope X, Gyroscope Y, Gyroscope Z");
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -332,7 +367,8 @@ public class MainActivity extends Activity {
         try {
             mAccelWriter.close();
             mGyroWriter.close();
-            mBandWriter.close();
+            mBandAccelWriter.close();
+            mBandGyroWriter.close();
         } catch (Exception e) {
 
             e.printStackTrace();
