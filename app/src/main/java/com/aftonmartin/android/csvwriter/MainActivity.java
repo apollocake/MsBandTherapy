@@ -13,8 +13,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.view.View;
 
-import com.microsoft.band.BandClient;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -30,22 +28,24 @@ import java.util.List;
 public class MainActivity extends Activity {
 
     private static final String TAG = "MEDIA";
-    private static final int MAX_ENTRIES = 1000;
+    private static final int MAX_ENTRIES = 1500;
     private static int mEntriesToWrite = MAX_ENTRIES;
-    private TextView results;
+    private TextView mResultsView;
     private Button mStartButton;
-    SensorManager mSensorManager = null;
-    TextView textView1 = null;
-    TextView textView2 = null;
-    List accel_list;
-    List gyro_list;
-    PrintWriter pWriter = null;
-    FileOutputStream mFileOutputStream = null;
-    File mFile = null;
-    boolean flip = true;
+    private SensorManager mSensorManager = null;
+    private TextView textView1 = null;
+    private TextView textView2 = null;
+    private List mAccelList;
+    private List mGyroList;
+    private PrintWriter mAccelWriter = null;
+    private PrintWriter mGyroWriter = null;
+    private FileOutputStream mFileOutputStream = null;
+    private File mAccelFile = null;
+    private File mGyroFile = null;
     float[] mSensorValues = null;
 
-    SensorEventListener mSensorEventListener = new SensorEventListener() {
+
+    SensorEventListener mSensorEventListenerAccel = new SensorEventListener() {
         @Override
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
         }
@@ -53,19 +53,54 @@ public class MainActivity extends Activity {
         @Override
         public void onSensorChanged(SensorEvent event) {
 
-            if (pWriter != null) {
+            if (mAccelWriter != null) {
                 mSensorValues = event.values;
-                //textView1.setText("x: " + values[0] + "\ny: " + values[1] + "\nz: " + values[2]); //print while recording
                 if (mEntriesToWrite > 0) {
-                    if (flip && event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-                        writeToSDFile("" + mSensorValues[0] + "," + mSensorValues[1] + "," + mSensorValues[2]);
-                        flip = false;
-                        mEntriesToWrite--;
-                    } else if (!flip && event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-                        writeToSDFile("," + mSensorValues[0] + "," + mSensorValues[1] + "," + mSensorValues[2] + "\n");
-                        flip = true;
-                        mEntriesToWrite--;
-                    }
+                    new Thread(new Runnable() {
+                        public void run() {
+                            mAccelWriter.println("" + mSensorValues[0] + "," + mSensorValues[1] + "," + mSensorValues[2]);
+                            textView1.post(new Runnable() {
+                                public void run() {
+                                    textView1.setText("x: " + mSensorValues[0] + "\ny: " + mSensorValues[1] + "\nz: " + mSensorValues[2]);                                 }
+                            });
+                        }
+                    }).start();
+                    mEntriesToWrite--;
+
+                } else {
+                    //read from text file
+                    readRaw();
+                    //
+                    unregisterListeners();
+                    closeSDFile();
+                    //reset values for next reading
+                    mEntriesToWrite = MAX_ENTRIES;
+                }
+            }
+        }
+    };
+
+    SensorEventListener mSensorEventListenerGyro = new SensorEventListener() {
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        }
+
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+
+            if (mAccelWriter != null) {
+                mSensorValues = event.values;
+                if (mEntriesToWrite > 0) {
+                    new Thread(new Runnable() {
+                        public void run() {
+                            mGyroWriter.println("" + mSensorValues[0] + "," + mSensorValues[1] + "," + mSensorValues[2]);
+                            textView2.post(new Runnable() {
+                                public void run() {
+                                    textView2.setText("x: " + mSensorValues[0] + "\ny: " + mSensorValues[1] + "\nz: " + mSensorValues[2]);                                 }
+                            });
+                        }
+                    }).start();
+                    mEntriesToWrite--;
                 } else {
                     //read from text file
                     readRaw();
@@ -80,6 +115,7 @@ public class MainActivity extends Activity {
     };
 
 
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,7 +123,7 @@ public class MainActivity extends Activity {
         //wire up view
         textView1 = (TextView) findViewById(R.id.textView1);
         textView2 = (TextView) findViewById(R.id.textView2);
-        results = (TextView) findViewById(R.id.results);
+        mResultsView = (TextView) findViewById(R.id.results);
         mStartButton = (Button) findViewById(R.id.start);
     }
 
@@ -98,8 +134,9 @@ public class MainActivity extends Activity {
 
             @Override
             public void onClick(View view) {
-                results.setText("");
+                mResultsView.setText("");
                 checkPermissionsExplicit();
+                //blah blah GO ASYNC!
                 openSDFile();
                 registerListeners();
             }
@@ -119,11 +156,11 @@ public class MainActivity extends Activity {
 
     private void registerListeners() {
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        accel_list = mSensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
-        gyro_list = mSensorManager.getSensorList(Sensor.TYPE_GYROSCOPE);
-        if (accel_list.size() + gyro_list.size() > 1) {
-            mSensorManager.registerListener(mSensorEventListener, (Sensor) accel_list.get(0), SensorManager.SENSOR_DELAY_FASTEST);
-            mSensorManager.registerListener(mSensorEventListener, (Sensor) gyro_list.get(0), SensorManager.SENSOR_DELAY_FASTEST);
+        mAccelList = mSensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
+        mGyroList = mSensorManager.getSensorList(Sensor.TYPE_GYROSCOPE);
+        if (mAccelList.size() + mGyroList.size() > 1) {
+            mSensorManager.registerListener(mSensorEventListenerAccel, (Sensor) mAccelList.get(0), SensorManager.SENSOR_DELAY_FASTEST);
+            mSensorManager.registerListener(mSensorEventListenerGyro, (Sensor) mGyroList.get(0), SensorManager.SENSOR_DELAY_FASTEST);
 
         } else {
             Toast.makeText(getBaseContext(), "Error: No Accelerometer or Gyroscope.", Toast.LENGTH_LONG).show();
@@ -133,10 +170,11 @@ public class MainActivity extends Activity {
 
     private void unregisterListeners() {
         try {
-            if (accel_list.size() + gyro_list.size() > 0) {
-                mSensorManager.unregisterListener(mSensorEventListener);
+            if (mAccelList.size() + mGyroList.size() > 0) {
+                mSensorManager.unregisterListener(mSensorEventListenerAccel);
+                mSensorManager.unregisterListener(mSensorEventListenerGyro);
             }
-        } catch (NullPointerException e){
+        } catch (NullPointerException e){ //quickly exiting app after start causes mSensorManager to remain null
             e.printStackTrace();
             Log.i(TAG, "Listeners unregistered before registering");
         } catch (Exception e){
@@ -161,7 +199,7 @@ public class MainActivity extends Activity {
             // Can't read or write
             mExternalStorageAvailable = mExternalStorageWriteable = false;
         }
-        results.append("\n\nExternal Media: readable="
+        mResultsView.append("\n\nExternal Media: readable="
                 + mExternalStorageAvailable + " writable=" + mExternalStorageWriteable);
     }
 
@@ -169,18 +207,22 @@ public class MainActivity extends Activity {
     private void openSDFile() {
         //get base URI
         File root = android.os.Environment.getExternalStorageDirectory();
-        results.append("\nExternal file system root: " + root);
+        mResultsView.append("\nExternal file system root: " + root);
 
 
         //set file up for writing
         File mediaFile = new File(getExternalCacheDir(), "NewDirectory");
-        boolean test = mediaFile.mkdirs();
-        mFile = new File(mediaFile, "myData.txt");
+        mediaFile.mkdirs();
+        mAccelFile = new File(mediaFile, "myData1.txt");
+        mGyroFile = new File(mediaFile, "myData2.txt");
         try {
-            mFileOutputStream = new FileOutputStream(mFile);
-            pWriter = new PrintWriter(new BufferedWriter(new FileWriter(mFile), 8192));
+            mFileOutputStream = new FileOutputStream(mAccelFile);
+            mFileOutputStream = new FileOutputStream(mGyroFile);
+            mAccelWriter = new PrintWriter(new BufferedWriter(new FileWriter(mAccelFile), 8192));
+            mGyroWriter = new PrintWriter(new BufferedWriter(new FileWriter(mGyroFile), 8192));
             //write header for CSV
-            pWriter.println("Accelerometer X, AccelerometerY, Accelerometer Z, Gyroscope X, Gyroscope Y, Gyroscope Z");
+            mAccelWriter.println("Accelerometer X, AccelerometerY, Accelerometer Z");
+            mGyroWriter.println("Gyroscope X, Gyroscope Y, Gyroscope Z");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             Log.i(TAG, "******* File not found. Did you" +
@@ -190,15 +232,12 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void writeToSDFile(String string) {
-        pWriter.print(string);
-    }
 
     private void closeSDFile() {
 
         try {
-            pWriter.flush();
-            pWriter.close();
+            mAccelWriter.flush();
+            mAccelWriter.close();
             mFileOutputStream.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -209,11 +248,12 @@ public class MainActivity extends Activity {
         } catch (Exception e){
             e.printStackTrace();
         }
-        results.append("\n\nFile written to " + mFile);
+        mResultsView.append("\n\nFile written to " + mAccelFile + "\n");
+        mResultsView.append("\n\nFile written to " + mGyroFile);
     }
 
     private void readRaw() {
-        results.append("\nData read from res/raw/textfile.txt:");
+        mResultsView.append("\nData read from res/raw/textfile.txt:");
         InputStream is = this.getResources().openRawResource(R.raw.textfile);
         InputStreamReader isr = new InputStreamReader(is);
         BufferedReader br = new BufferedReader(isr, 8192);    // 2nd arg is buffer size
@@ -228,7 +268,7 @@ public class MainActivity extends Activity {
                 test = br.readLine();
                 // readLine() returns null if no more lines in the file
                 if (test == null) break;
-                results.append("\n" + "    " + test);
+                mResultsView.append("\n" + "    " + test);
             }
             isr.close();
             is.close();
@@ -236,6 +276,6 @@ public class MainActivity extends Activity {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        results.append("\n\nThat is all");
+        mResultsView.append("\n\nThat is all");
     }
 }
