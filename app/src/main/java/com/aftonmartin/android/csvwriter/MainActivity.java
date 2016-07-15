@@ -13,6 +13,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.view.View;
 
+import com.microsoft.band.BandClient;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
