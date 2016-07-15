@@ -46,13 +46,16 @@ public class MainActivity extends Activity {
     private SensorManager mSensorManager = null;
     private TextView textView1 = null;
     private TextView textView2 = null;
+    private TextView textView3 = null;
     private List mAccelList;
     private List mGyroList;
     private PrintWriter mAccelWriter = null;
     private PrintWriter mGyroWriter = null;
+    private PrintWriter mBandWriter = null;
     private FileOutputStream mFileOutputStream = null;
     private File mAccelFile = null;
     private File mGyroFile = null;
+    private File mBandFile = null;
     private BandClient client = null;
 
     float[] mSensorValues = null;
@@ -61,9 +64,27 @@ public class MainActivity extends Activity {
     private BandAccelerometerEventListener mAccelerometerEventListener = new BandAccelerometerEventListener() {
         @Override
         public void onBandAccelerometerChanged(final BandAccelerometerEvent event) {
-            if (event != null) {
-                appendToUI(String.format(" X = %.3f \n Y = %.3f\n Z = %.3f", event.getAccelerationX(),
-                        event.getAccelerationY(), event.getAccelerationZ()));
+            if (event != null && mBandWriter != null) {
+                if (mEntriesToWrite > 0) {
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mBandWriter.println(String.format(" X = %.3f  Y = %.3f Z = %.3f", event.getAccelerationX(), event.getAccelerationY(), event.getAccelerationZ()));
+                            textView3.post(new Runnable() {
+                                public void run() {
+                                    textView3.setText("x: " + mSensorValues[0] + "\ny: " + mSensorValues[1] + "\nz: " + mSensorValues[2]);
+                                }
+                            });
+                        }
+                    }).start();
+                } else {
+                    readRaw();
+                    //
+                    unregisterListeners();
+                    closeSDFile();
+                    //reset values for next reading
+                    mEntriesToWrite = MAX_ENTRIES;
+                }
             }
         }
     };
@@ -128,7 +149,7 @@ public class MainActivity extends Activity {
                     mEntriesToWrite--;
                 } else {
                     //read from text file
-                    readRaw();
+                    ////////////////////////readRaw();
                     //
                     unregisterListeners();
                     closeSDFile();
@@ -147,6 +168,7 @@ public class MainActivity extends Activity {
         //wire up view
         textView1 = (TextView) findViewById(R.id.textView1);
         textView2 = (TextView) findViewById(R.id.textView2);
+        textView3 = (TextView) findViewById(R.id.textView3);
         mResultsView = (TextView) findViewById(R.id.results);
         mStartButton = (Button) findViewById(R.id.start);
     }
@@ -188,7 +210,7 @@ public class MainActivity extends Activity {
             try {
                 if (getConnectedBandClient()) {
                     appendToUI("Band is connected.\n");
-                    client.getSensorManager().registerAccelerometerEventListener(mAccelerometerEventListener, SampleRate.MS128);
+                    client.getSensorManager().registerAccelerometerEventListener(mAccelerometerEventListener, SampleRate.MS32);
                 } else {
                     appendToUI("Band isn't connected. Please make sure bluetooth is on and the band is in range.\n");
                 }
@@ -286,18 +308,20 @@ public class MainActivity extends Activity {
 
 
         //set file up for writing
-        File mediaFile = new File(getExternalCacheDir(), "NewDirectory");
+        File mediaFile = new File(getExternalCacheDir(), "SensorData");
         mediaFile.mkdirs();
-        mAccelFile = new File(mediaFile, "myData1.txt");
-        mGyroFile = new File(mediaFile, "myData2.txt");
+        mAccelFile = new File(mediaFile, "accel_data.txt");
+        mGyroFile = new File(mediaFile, "gyro_data.txt");
+        mBandFile = new File(mediaFile, "band_data.txt");
         try {
-            mFileOutputStream = new FileOutputStream(mAccelFile);
-            mFileOutputStream = new FileOutputStream(mGyroFile);
             mAccelWriter = new PrintWriter(new BufferedWriter(new FileWriter(mAccelFile), 8192));
             mGyroWriter = new PrintWriter(new BufferedWriter(new FileWriter(mGyroFile), 8192));
+            mBandWriter = new PrintWriter(new BufferedWriter(new FileWriter(mBandFile), 8192));
             //write header for CSV
             mAccelWriter.println("Accelerometer X, AccelerometerY, Accelerometer Z");
             mGyroWriter.println("Gyroscope X, Gyroscope Y, Gyroscope Z");
+            mBandWriter.println("Accelerometer X, AccelerometerY, Accelerometer Z");
+
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             Log.i(TAG, "******* File not found. Did you" +
@@ -311,16 +335,11 @@ public class MainActivity extends Activity {
     private void closeSDFile() {
 
         try {
-            mAccelWriter.flush();
             mAccelWriter.close();
-            mFileOutputStream.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            Log.i(TAG, "******* File not found. Did you" +
-                    " add a WRITE_EXTERNAL_STORAGE permission to the   manifest?");
-        } catch (IOException e) {
-            e.printStackTrace();
+            mGyroWriter.close();
+            mBandWriter.close();
         } catch (Exception e) {
+
             e.printStackTrace();
         }
         mResultsView.append("\n\nFile written to " + mAccelFile + "\n");
