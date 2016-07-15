@@ -78,12 +78,7 @@ public class MainActivity extends Activity {
                         }
                     }).start();
                 } else {
-                    readRaw();
-                    //
-                    unregisterListeners();
-                    closeSDFile();
-                    //reset values for next reading
-                    mEntriesToWrite = MAX_ENTRIES;
+                    //can't touch UI thread
                 }
             }
         }
