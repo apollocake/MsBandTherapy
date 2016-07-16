@@ -34,7 +34,7 @@ import java.io.PrintWriter;
 public class MainActivity extends Activity {
 
     private static final String TAG = "MEDIA";
-    private static final int MAX_ENTRIES = 1500;
+    private static final int MAX_ENTRIES = 1000;
     private static int mEntriesToWrite = MAX_ENTRIES;
     private TextView mResultsView;
     private Button mStartButton;
@@ -46,25 +46,21 @@ public class MainActivity extends Activity {
     private File mBandGyroFile = null;
     private BandClient client = null;
     AccelerometerSubscriptionTask aTask = null;
-
+    String hey;
 
 
     private BandAccelerometerEventListener mBandAccelerometerEventListener = new BandAccelerometerEventListener() {
         @Override
         public void onBandAccelerometerChanged(final BandAccelerometerEvent event) {
             if (event != null && mBandAccelWriter != null) {
+
                 if (mEntriesToWrite > 0) {
-                    new Thread(new Runnable() {
-                        @Override
+                    mBandAccelWriter.println(String.format(" X = %.3f  Y = %.3f Z = %.3f", event.getAccelerationX(), event.getAccelerationY(), event.getAccelerationZ()));
+                    textView3.post(new Runnable() {
                         public void run() {
-                            mBandAccelWriter.println(String.format(" X = %.3f  Y = %.3f Z = %.3f", event.getAccelerationX(), event.getAccelerationY(), event.getAccelerationZ()));
-                            textView3.post(new Runnable() {
-                                public void run() {
-                                    textView3.setText("x: " + event.getAccelerationX() + "\ny: " + event.getAccelerationY() + "\nz: " + event.getAccelerationZ());
-                                }
-                            });
+                            textView3.setText("x: " + event.getAccelerationX() + "\ny: " + event.getAccelerationY() + "\nz: " + event.getAccelerationZ());
                         }
-                    }).start();
+                    });
                     mEntriesToWrite--;
                 } else {
                     if (client != null) {
@@ -87,18 +83,14 @@ public class MainActivity extends Activity {
         @Override
         public void onBandGyroscopeChanged(final BandGyroscopeEvent event) {
             if (event != null && mBandGyroWriter != null) {
+
                 if (mEntriesToWrite > 0) {
-                    new Thread(new Runnable() {
-                        @Override
+                    mBandGyroWriter.println(String.format(" X = %.3f  Y = %.3f Z = %.3f", event.getAccelerationX(), event.getAccelerationY(), event.getAccelerationZ()));
+                    textView4.post(new Runnable() {
                         public void run() {
-                            mBandGyroWriter.println(String.format(" X = %.3f  Y = %.3f Z = %.3f", event.getAccelerationX(), event.getAccelerationY(), event.getAccelerationZ()));
-                            textView4.post(new Runnable() {
-                                public void run() {
-                                    textView4.setText("x: " + event.getAccelerationX() + "\ny: " + event.getAccelerationY() + "\nz: " + event.getAccelerationZ());
-                                }
-                            });
+                            textView4.setText("x: " + event.getAccelerationX() + "\ny: " + event.getAccelerationY() + "\nz: " + event.getAccelerationZ());
                         }
-                    }).start();
+                    });
                     mEntriesToWrite--;
                 } else {
                     if (client != null) {
@@ -137,7 +129,7 @@ public class MainActivity extends Activity {
                 checkPermissionsExplicit();
                 openSDFile();
                 //blah blah GO ASYNC!
-                if (aTask == null || AsyncTask.Status.FINISHED == aTask.getStatus()){
+                if (aTask == null || AsyncTask.Status.FINISHED == aTask.getStatus()) {
                     aTask = new AccelerometerSubscriptionTask();
                     aTask.execute();
                 }
@@ -258,13 +250,14 @@ public class MainActivity extends Activity {
 
 
     private void closeSDFile() {
+        if ((mBandGyroWriter != null) && (mBandAccelWriter != null)) {
+            try {
+                mBandAccelWriter.close();
+                mBandGyroWriter.close();
+            } catch (Exception e) {
 
-        try {
-            mBandAccelWriter.close();
-            mBandGyroWriter.close();
-        } catch (Exception e) {
-
-            e.printStackTrace();
+                e.printStackTrace();
+            }
         }
         //mResultsView.append("\n\nFile written to " + mBandAccelFile + "\n");
         //mResultsView.append("\n\nFile written to " + mBandGyroFile);
