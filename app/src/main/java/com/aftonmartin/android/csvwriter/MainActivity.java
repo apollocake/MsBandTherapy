@@ -45,6 +45,8 @@ public class MainActivity extends Activity {
     private File mBandAccelFile = null;
     private File mBandGyroFile = null;
     private BandClient client = null;
+    AccelerometerSubscriptionTask aTask = null;
+
 
 
     private BandAccelerometerEventListener mBandAccelerometerEventListener = new BandAccelerometerEventListener() {
@@ -74,6 +76,7 @@ public class MainActivity extends Activity {
                         }
                     }
                     closeSDFile();
+                    mEntriesToWrite = MAX_ENTRIES;
                 }
             }
         }
@@ -107,6 +110,7 @@ public class MainActivity extends Activity {
                         }
                     }
                     closeSDFile();
+                    mEntriesToWrite = MAX_ENTRIES;
                 }
             }
         }
@@ -133,7 +137,10 @@ public class MainActivity extends Activity {
                 checkPermissionsExplicit();
                 openSDFile();
                 //blah blah GO ASYNC!
-                new AccelerometerSubscriptionTask().execute();
+                if (aTask == null || AsyncTask.Status.FINISHED == aTask.getStatus()){
+                    aTask = new AccelerometerSubscriptionTask();
+                    aTask.execute();
+                }
             }
         });
         mResultsView.setText("");
