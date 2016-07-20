@@ -10,15 +10,25 @@ import com.microsoft.band.sensors.BandGyroscopeEvent;
 import com.microsoft.band.sensors.BandGyroscopeEventListener;
 import com.microsoft.band.sensors.SampleRate;
 
+import java.util.ArrayList;
+
 public class SensorListeners {
-    private static final int MAX_ENTRIES = 1000;
+    private static final int MAX_ENTRIES = 100;
+    private long timestamp;
+    private float gyroX, gyroY, gyroZ;
+    private float accelX, accelY, accelZ;
     private static int mEntriesToWrite = MAX_ENTRIES;
     private BandClient mBandClient = null;
+    private SensorModel mRawAccelData;
+    private SensorModel mRawGyroData;
+    SensorModel noGravData = null;
     private static SensorListeners mSensorListeners = null;
     Activity mCallerActivity = null;
 
 
     protected SensorListeners() {
+        mRawAccelData = new SensorModel();
+        mRawGyroData = new SensorModel();
     }
 
     public synchronized static SensorListeners getInstance() {
@@ -43,11 +53,15 @@ public class SensorListeners {
     private BandAccelerometerEventListener mBandAccelerometerEventListener = new BandAccelerometerEventListener() {
         @Override
         public void onBandAccelerometerChanged(final BandAccelerometerEvent event) {
-            if (event != null && FileUtils.bandAccelWriterExists()) {
-                //if (event != null && mBandAccelWriter != null) {
-
+            if (event != null && FileUtils.getInstance().bandAccelWriterExists()) {
                 if (mEntriesToWrite > 0) {
-                    FileUtils.getInstance().getBandAccelWriter().println(String.format(" X = %.3f  Y = %.3f Z = %.3f", event.getAccelerationX(), event.getAccelerationY(), event.getAccelerationZ()));
+                    accelX = event.getAccelerationX();
+                    accelY = event.getAccelerationY();
+                    accelZ = event.getAccelerationZ();
+                    timestamp = event.getTimestamp();
+                    mRawAccelData.pushAll(accelX, accelY, accelZ, timestamp);
+
+                    //FileUtils.getInstance().getBandAccelWriter().println(String.format(" X = %.3f  Y = %.3f Z = %.3f Time = %3d", accelX, accelY, accelZ, delay));
                     UIAsyncUtils.getInstance().appendToUI(R.id.textView3, "x: " + event.getAccelerationX() + "\ny: " + event.getAccelerationY() + "\nz: " + event.getAccelerationZ());
 
                     mEntriesToWrite--;
@@ -60,6 +74,11 @@ public class SensorListeners {
                             UIAsyncUtils.getInstance().appendToUI(R.id.results, "x: " + event.getAccelerationX() + "\ny: " + event.getAccelerationY() + "\nz: " + event.getAccelerationZ());
                         }
                     }
+                    //subtract gravity by subtracting iteratively differences neighbor by neighbor
+                    SensorModel noGravData = Algorithm.subtractGravity(mRawAccelData);
+                    SensorModel Velocity = Algorithm.getVelocity(noGravData);
+                    //then integrate by summing up each value and adding i.e. velocity0= velocity1+accel1 .....
+
                     FileUtils.getInstance().closeSDFile();
                     mEntriesToWrite = MAX_ENTRIES;
                 }
@@ -71,10 +90,10 @@ public class SensorListeners {
 
         @Override
         public void onBandGyroscopeChanged(final BandGyroscopeEvent event) {
-            if (event != null && FileUtils.bandGyroWriterExists()) {
+            if (event != null && FileUtils.getInstance().bandGyroWriterExists()) {
 
                 if (mEntriesToWrite > 0) {
-                    FileUtils.getInstance().getBandGyroWriter().println(String.format(" X = %.3f  Y = %.3f Z = %.3f", event.getAccelerationX(), event.getAccelerationY(), event.getAccelerationZ()));
+                    //FileUtils.getInstance().getBandGyroWriter().println(String.format(" X = %.3f  Y = %.3f Z = %.3f", event.getAccelerationX(), event.getAccelerationY(), event.getAccelerationZ()));
                     UIAsyncUtils.getInstance().appendToUI(R.id.textView4, "x: " + event.getAccelerationX() + "\ny: " + event.getAccelerationY() + "\nz: " + event.getAccelerationZ());
 
                     mEntriesToWrite--;
@@ -87,6 +106,10 @@ public class SensorListeners {
                             UIAsyncUtils.getInstance().appendToUI(R.id.results, "x: " + event.getAccelerationX() + "\ny: " + event.getAccelerationY() + "\nz: " + event.getAccelerationZ());
                         }
                     }
+                    /*Replace with angular version or abstract process function here*/
+                    SensorModel noGravData = Algorithm.subtractGravity(mRawAccelData);
+                    SensorModel Velocity = Algorithm.getVelocity(noGravData);
+
                     FileUtils.getInstance().closeSDFile();
                     mEntriesToWrite = MAX_ENTRIES;
                 }
