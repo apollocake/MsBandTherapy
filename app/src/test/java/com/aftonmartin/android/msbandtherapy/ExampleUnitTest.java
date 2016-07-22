@@ -1,4 +1,4 @@
-package com.aftonmartin.android.csvwriter;
+package com.aftonmartin.android.msbandtherapy;
 
 import org.junit.Test;
 

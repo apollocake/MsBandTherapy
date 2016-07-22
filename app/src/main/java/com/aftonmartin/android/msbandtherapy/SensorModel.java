@@ -1,4 +1,4 @@
-package com.aftonmartin.android.csvwriter;
+package com.aftonmartin.android.msbandtherapy;
 
 import java.util.ArrayList;
 
@@ -44,5 +44,8 @@ public class SensorModel {
     }
     public ArrayList<Long> getTimeData(){
         return time;
+    }
+    public void setTimeData(ArrayList<Long> timeData){
+        this.time = timeData;
     }
 }

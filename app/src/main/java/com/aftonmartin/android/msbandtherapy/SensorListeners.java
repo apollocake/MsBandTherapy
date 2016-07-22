@@ -1,4 +1,4 @@
-package com.aftonmartin.android.csvwriter;
+package com.aftonmartin.android.msbandtherapy;
 
 import android.app.Activity;
 
@@ -10,13 +10,8 @@ import com.microsoft.band.sensors.BandGyroscopeEvent;
 import com.microsoft.band.sensors.BandGyroscopeEventListener;
 import com.microsoft.band.sensors.SampleRate;
 
-import java.util.ArrayList;
-
 public class SensorListeners {
-    private static final int MAX_ENTRIES = 100;
-    private long timestamp;
-    private float gyroX, gyroY, gyroZ;
-    private float accelX, accelY, accelZ;
+    private static final int MAX_ENTRIES = 900;
     private static int mEntriesToWrite = MAX_ENTRIES;
     private BandClient mBandClient = null;
     private SensorModel mRawAccelData;
@@ -55,28 +50,20 @@ public class SensorListeners {
         public void onBandAccelerometerChanged(final BandAccelerometerEvent event) {
             if (event != null && FileUtils.getInstance().bandAccelWriterExists()) {
                 if (mEntriesToWrite > 0) {
-                    accelX = event.getAccelerationX();
-                    accelY = event.getAccelerationY();
-                    accelZ = event.getAccelerationZ();
-                    timestamp = event.getTimestamp();
-                    mRawAccelData.pushAll(accelX, accelY, accelZ, timestamp);
+                    mRawAccelData.pushAll(event.getAccelerationX(), event.getAccelerationY(), event.getAccelerationZ(), event.getTimestamp());
 
                     //FileUtils.getInstance().getBandAccelWriter().println(String.format(" X = %.3f  Y = %.3f Z = %.3f Time = %3d", accelX, accelY, accelZ, delay));
                     UIAsyncUtils.getInstance().appendToUI(R.id.textView3, "x: " + event.getAccelerationX() + "\ny: " + event.getAccelerationY() + "\nz: " + event.getAccelerationZ());
 
                     mEntriesToWrite--;
                 } else {
-                    if (mBandClient != null) {
-                        try {
-                            mBandClient.getSensorManager().unregisterAccelerometerEventListener(mBandAccelerometerEventListener);
-                            mBandClient.getSensorManager().unregisterGyroscopeEventListener(mBandGyroscopeEventListener);
-                        } catch (BandIOException e) {
-                            UIAsyncUtils.getInstance().appendToUI(R.id.results, "x: " + event.getAccelerationX() + "\ny: " + event.getAccelerationY() + "\nz: " + event.getAccelerationZ());
-                        }
-                    }
+                    unregisterListeners();
                     //subtract gravity by subtracting iteratively differences neighbor by neighbor
                     SensorModel noGravData = Algorithm.subtractGravity(mRawAccelData);
+                    SensorModel lowPassed = Algorithm.lowPassFilter(mRawAccelData);
                     SensorModel Velocity = Algorithm.getVelocity(noGravData);
+                    SensorModel Position = Algorithm.getPosition(Velocity);
+
                     //then integrate by summing up each value and adding i.e. velocity0= velocity1+accel1 .....
 
                     FileUtils.getInstance().closeSDFile();
@@ -98,17 +85,12 @@ public class SensorListeners {
 
                     mEntriesToWrite--;
                 } else {
-                    if (mBandClient != null) {
-                        try {
-                            mBandClient.getSensorManager().unregisterAccelerometerEventListener(mBandAccelerometerEventListener);
-                            mBandClient.getSensorManager().unregisterGyroscopeEventListener(mBandGyroscopeEventListener);
-                        } catch (BandIOException e) {
-                            UIAsyncUtils.getInstance().appendToUI(R.id.results, "x: " + event.getAccelerationX() + "\ny: " + event.getAccelerationY() + "\nz: " + event.getAccelerationZ());
-                        }
-                    }
+                    unregisterListeners();
                     /*Replace with angular version or abstract process function here*/
                     SensorModel noGravData = Algorithm.subtractGravity(mRawAccelData);
+                    SensorModel lowPassed = Algorithm.lowPassFilter(mRawAccelData);
                     SensorModel Velocity = Algorithm.getVelocity(noGravData);
+                    SensorModel Position = Algorithm.getPosition(Velocity);
 
                     FileUtils.getInstance().closeSDFile();
                     mEntriesToWrite = MAX_ENTRIES;
