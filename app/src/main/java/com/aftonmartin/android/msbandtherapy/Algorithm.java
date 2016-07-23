@@ -13,7 +13,7 @@ public class Algorithm {
         ArrayList<Float>[] rawAcceleration = rawInput.getSensorData();
         ArrayList<Float>[] processedAcceleration = processedData.getSensorData();
         //find alpha and compensate for phase/bias accumulation
-        final double ALPHA = 0.2;
+        final double ALPHA = 0.5;
         int min = rawInput.getMin() - 1; // in case of interruptions slowest x,y,z wins, rest of data discarded
         float[] gravity = {0,0,0};
         for (int i = 1; i < min; i++) {

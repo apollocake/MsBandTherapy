@@ -11,7 +11,7 @@ import com.microsoft.band.sensors.BandGyroscopeEventListener;
 import com.microsoft.band.sensors.SampleRate;
 
 public class SensorListeners {
-    private static final int MAX_ENTRIES = 900;
+    private static final int MAX_ENTRIES = 400;
     private static int mEntriesToWrite = MAX_ENTRIES;
     private BandClient mBandClient = null;
     private SensorModel mRawAccelData;
@@ -59,8 +59,8 @@ public class SensorListeners {
                 } else {
                     unregisterListeners();
                     //subtract gravity by subtracting iteratively differences neighbor by neighbor
-                    SensorModel noGravData = Algorithm.subtractGravity(mRawAccelData);
-                    SensorModel lowPassed = Algorithm.lowPassFilter(mRawAccelData);
+                    SensorModel noGravData = Algorithm.subtractGravity(mRawGyroData);
+                    SensorModel lowPassed = Algorithm.lowPassFilter(mRawGyroData);
                     SensorModel Velocity = Algorithm.getVelocity(noGravData);
                     SensorModel Position = Algorithm.getPosition(Velocity);
 
@@ -81,14 +81,14 @@ public class SensorListeners {
 
                 if (mEntriesToWrite > 0) {
                     //FileUtils.getInstance().getBandGyroWriter().println(String.format(" X = %.3f  Y = %.3f Z = %.3f", event.getAccelerationX(), event.getAccelerationY(), event.getAccelerationZ()));
-                    UIAsyncUtils.getInstance().appendToUI(R.id.textView4, "x: " + event.getAccelerationX() + "\ny: " + event.getAccelerationY() + "\nz: " + event.getAccelerationZ());
-
+                    UIAsyncUtils.getInstance().appendToUI(R.id.textView4, "x: " + event.getAngularVelocityX() + "\ny: " + event.getAngularVelocityY() + "\nz: " + event.getAngularVelocityZ());
+                    mRawGyroData.pushAll(event.getAngularVelocityX(), event.getAngularVelocityY(), event.getAngularVelocityZ(), event.getTimestamp());
                     mEntriesToWrite--;
                 } else {
                     unregisterListeners();
                     /*Replace with angular version or abstract process function here*/
-                    SensorModel noGravData = Algorithm.subtractGravity(mRawAccelData);
-                    SensorModel lowPassed = Algorithm.lowPassFilter(mRawAccelData);
+                    SensorModel noGravData = Algorithm.subtractGravity(mRawGyroData);
+                    SensorModel lowPassed = Algorithm.lowPassFilter(mRawGyroData);
                     SensorModel Velocity = Algorithm.getVelocity(noGravData);
                     SensorModel Position = Algorithm.getPosition(Velocity);
 
