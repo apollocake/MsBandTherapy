@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">CSVWriter</string>
+    <string name="app_name">MsBandTherapy</string>
     <string name="start">Go!</string>
     <string name="view_data">View Data</string>
 </resources>
