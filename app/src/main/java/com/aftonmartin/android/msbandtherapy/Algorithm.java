@@ -117,6 +117,7 @@ public class Algorithm {
             sumFloats = sumFloats();
             switch(currentState){
                 case IDLE:
+                    UIAsyncUtils.getInstance().appendToUI(R.id.angleState, "Idle");
                     if(Math.abs(pitchVelocity) > MOVEMENT_BEGIN_LIMIT) { //must happen four consecutive times or reset
                         startCounter += 1;
                         if(startCounter > 4){
@@ -129,6 +130,7 @@ public class Algorithm {
                     break;
 
                 case FIND_MIN:
+                    UIAsyncUtils.getInstance().appendToUI(R.id.angleState, "FIND_MIN");
                     if(pitchVelocity < -OMEGA_LIMIT){
                         if(sumFloats < -OMEGA_SUM_LIMIT) {
                             currentState = MOVEMENT_STATE.AT_MIN;
@@ -137,9 +139,11 @@ public class Algorithm {
                     }
                     break;
                 case AT_MIN:
+                    UIAsyncUtils.getInstance().appendToUI(R.id.angleState, "AT_MIN");
                     currentState = MOVEMENT_STATE.FIND_MAX;
                     break;
                 case FIND_MAX:
+                    UIAsyncUtils.getInstance().appendToUI(R.id.angleState, "FIND_MAX");
                     if((pitchVelocity > OMEGA_LIMIT) && sumFloats > OMEGA_SUM_LIMIT){
                         currentState = MOVEMENT_STATE.AT_MAX;
                         //backPeak = j; better for logging later
@@ -148,14 +152,17 @@ public class Algorithm {
                     }
                     break;
                 case AT_MAX:
+                    UIAsyncUtils.getInstance().appendToUI(R.id.angleState, "AT_MAX");
                     currentState = MOVEMENT_STATE.DETECT_INCREASE;
                     break;
                 case DETECT_INCREASE:
-                    if (Math.abs(pitchVelocity) < 0.05){
+                    UIAsyncUtils.getInstance().appendToUI(R.id.angleState, "DETECT_INCREASE");
+                    if (Math.abs(pitchVelocity) < MOVEMENT_BEGIN_LIMIT){
                         currentState = MOVEMENT_STATE.IDLE;
                     }
                     break;
                 default:
+                    UIAsyncUtils.getInstance().appendToUI(R.id.angleState, "default error");
                     break;
 
 
@@ -167,13 +174,6 @@ public class Algorithm {
             float sum = 0;
             for(int i=0; i < sumQueue.size(); i++){
                 sum += sumQueue.get(i);
-            }
-            int test = sumQueue.size();
-            if(sumQueue.size() > 4 && sum < -150){
-                int jesuschrist = 3;
-                int boolablablu = 3;
-                double jjj = jesuschrist / boolablablu;
-                return sum;
             }
             return sum;
         }

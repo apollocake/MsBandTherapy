@@ -2,5 +2,6 @@
     <string name="app_name">MsBandTherapy</string>
     <string name="start">Start</string>
     <string name="stop">Stop</string>
+    <string name="beep">Beep</string>
     <string name="view_data">View Data</string>
 </resources>

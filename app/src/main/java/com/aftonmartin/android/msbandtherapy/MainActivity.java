@@ -13,6 +13,7 @@ public class MainActivity extends Activity {
 
     private Button mStartButton;
     private Button mStopButton;
+    private Button mBeepButton;
     private TextView mAccelDataText = null;
     private TextView mGyroDataText = null;
     private TextView mStatusText = null;
@@ -30,6 +31,7 @@ public class MainActivity extends Activity {
         mGyroDataText = (TextView) findViewById(R.id.textView4);
         mStartButton = (Button) findViewById(R.id.start);
         mStopButton = (Button) findViewById(R.id.stop);
+        mBeepButton = (Button) findViewById(R.id.beep);
         mStatusText = (TextView) findViewById(R.id.results);
 
     }
@@ -60,6 +62,7 @@ public class MainActivity extends Activity {
 
             @Override
             public void onClick(View view) {
+                //unregister listeners and do post-processing
                 SensorListeners.getInstance().unregisterListeners();
                 SensorModel rawGyroData = SensorListeners.getInstance().getGyroData();
                 SensorModel noGravData = Algorithm.subtractGravity(rawGyroData);
@@ -67,6 +70,13 @@ public class MainActivity extends Activity {
                 SensorModel lowPassed2 = Algorithm.lowPassFilter(lowPassed);
                 SensorModel Position = Algorithm.getPosition(rawGyroData);
                 FileUtils.getInstance().closeSDFile();
+            }
+        });
+        mBeepButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View view) {
+                SensorListeners.getInstance().beep(Algorithm.MOVEMENT_STATE.AT_MAX);
             }
         });
         mStatusText.setText("");

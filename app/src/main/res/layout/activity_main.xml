@@ -28,6 +28,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         />
+    <Button
+        android:id="@+id/beep"
+        android:text="@string/beep"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        />
 </LinearLayout>
 
     <TextView
@@ -49,6 +55,13 @@
         android:layout_height="wrap_content"
         android:padding="12dp"
         android:text="Results"/>
+    <TextView
+        android:id="@+id/angleState"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:text="Angle State"/>
+
 
 
 </LinearLayout>
