@@ -33,7 +33,7 @@ public class Algorithm {
 
 
 
-            FileUtils.getLowPassWriter().println(String.format("%.6f,%.6f,%.6f", lowPassValue[0], lowPassValue[1], lowPassValue[2]));
+            FileUtils.getInstance().getLowPassWriter().println(String.format("%.6f,%.6f,%.6f", lowPassValue[0], lowPassValue[1], lowPassValue[2]));
 
         }
 
@@ -49,7 +49,7 @@ public class Algorithm {
             processedAcceleration[0].add(rawAcceleration[0].get(i + 1) - rawAcceleration[0].get(i));
             processedAcceleration[1].add(rawAcceleration[1].get(i + 1) - rawAcceleration[1].get(i));
             processedAcceleration[2].add(rawAcceleration[2].get(i + 1) - rawAcceleration[2].get(i));
-            FileUtils.getSubtractGravWriter().println(String.format("%.6f,%.6f,%.6f", rawAcceleration[0].get(i + 1) - rawAcceleration[0].get(i),
+            FileUtils.getInstance().getSubtractGravWriter().println(String.format("%.6f,%.6f,%.6f", rawAcceleration[0].get(i + 1) - rawAcceleration[0].get(i),
                     rawAcceleration[1].get(i + 1) - rawAcceleration[1].get(i), rawAcceleration[2].get(i + 1) - rawAcceleration[2].get(i)));
 
         }
@@ -92,7 +92,7 @@ public class Algorithm {
             processedPositions[1].add(positionY);
             positionZ = positionZ + velocityData[2].get(i);
             processedPositions[2].add(positionZ);
-            FileUtils.getPositionWriter().println(String.format("%.6f,%.6f,%.6f", positionX, positionY, positionZ));
+            FileUtils.getInstance().getPositionWriter().println(String.format("%.6f,%.6f,%.6f", positionX, positionY, positionZ));
         }
         return calculatedPosition;
     }

@@ -33,12 +33,12 @@ public class FileUtils {
     private static Activity mainActivity = null;
 
     protected FileUtils() {
+        mUIAsyncUtils = UIAsyncUtils.getInstance();
     }
 
     public synchronized static FileUtils getInstance() {
         if (fileUtils == null) {
             fileUtils = new FileUtils();
-            mUIAsyncUtils = UIAsyncUtils.getInstance();
         }
         return fileUtils;
     }
@@ -183,7 +183,6 @@ public class FileUtils {
         mSubtractGravFile = new File(mediaFile, "sub_grav.csv");
         mLowPassFile = new File(mediaFile, "low_pass.csv");
 
-
         try {
             mBandAccelWriter = new PrintWriter(new BufferedWriter(new FileWriter(mBandAccelFile), 8192));
             mBandGyroWriter = new PrintWriter(new BufferedWriter(new FileWriter(mBandGyroFile), 8192));
@@ -220,35 +219,13 @@ public class FileUtils {
                 e.printStackTrace();
             }
         }
-    }
+        mBandAccelWriter = null;
+        mBandGyroWriter= null;
+        mGyroVelocityWriter= null;
+        mLowPassWriter = null;
+        mPositionWriter = null;
+        mSubtractGravWriter = null;
 
-
-
-    public void closeLocalFileWindows() {
-        //get base URI
-        File root = android.os.Environment.getExternalStorageDirectory();
-        //mResultsView.append("\nExternal file system root: " + root);
-        mUIAsyncUtils.appendToUI(R.id.results, "\nExternal file system root: " + root);
-
-        //set file up for writing
-        File mediaFile = new File(mainActivity.getApplicationContext().getExternalCacheDir(), "SensorData");
-        mediaFile.mkdirs();
-        mBandAccelFile = new File(mediaFile, "band_accel.txt");
-        mBandGyroFile = new File(mediaFile, "band_gyro.txt");
-        try {
-            mBandAccelWriter = new PrintWriter(new BufferedWriter(new FileWriter(mBandAccelFile), 8192));
-            mBandGyroWriter = new PrintWriter(new BufferedWriter(new FileWriter(mBandGyroFile), 8192));
-            //write header for CSV
-            mBandAccelWriter.println("Accelerometer X, AccelerometerY, Accelerometer Z");
-            mBandGyroWriter.println("Gyroscope X, Gyroscope Y, Gyroscope Z");
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            Log.i(TAG, "******* File not found. Did you" +
-                    " add a WRITE_EXTERNAL_STORAGE permission to the   manifest?");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
 
