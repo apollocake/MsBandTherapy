@@ -15,8 +15,18 @@ import java.io.PrintWriter;
 public class FileUtils {
     private static PrintWriter mBandAccelWriter = null;
     private static PrintWriter mBandGyroWriter = null;
+    private static PrintWriter mLowPassWriter = null;
+    private static PrintWriter mSubtractGravWriter = null;
+    private static PrintWriter mGyroVelocityWriter = null;
+    private static PrintWriter mPositionWriter = null;
+
     private static File mBandAccelFile = null;
     private static File mBandGyroFile = null;
+    private static File mLowPassFile = null;
+    private static File mSubtractGravFile = null;
+    private static File mGyroVelocityFile = null;
+    private static File mPositionFile = null;
+
     private static final String TAG = "MEDIA";
     private static FileUtils fileUtils = null;
     private static UIAsyncUtils mUIAsyncUtils = null;
@@ -46,13 +56,22 @@ public class FileUtils {
     public static PrintWriter getBandGyroWriter() {
         return mBandGyroWriter;
     }
-
-    public static boolean bandGyroFileExists() {
-        if (mBandGyroFile == null) {
-            return false;
-        }
-        return true;
+    public static PrintWriter getLowPassWriter() {
+        return mLowPassWriter;
     }
+
+    public static PrintWriter getSubtractGravWriter() {
+        return mSubtractGravWriter;
+    }
+
+    public static PrintWriter getGyroVelocityWriter() {
+        return mGyroVelocityWriter;
+    }
+
+    public static PrintWriter getPositionWriter() {
+        return mPositionWriter;
+    }
+
 
     public static boolean bandAccelWriterExists() {
         if (mBandAccelWriter == null) {
@@ -68,12 +87,63 @@ public class FileUtils {
         return true;
     }
 
+
+    public static boolean lowPassWriterExists() {
+        if (mLowPassWriter == null) {
+            return false;
+        }
+        return true;
+    }
+    public static boolean subtractGravWriterExists() {
+        if (mSubtractGravWriter == null) {
+            return false;
+        }
+        return true;
+    }
+    public static boolean gyroVelocityWriterExists() {
+        if (mGyroVelocityWriter == null) {
+            return false;
+        }
+        return true;
+    }
+    public static boolean positionWriterExists() {
+        if (mPositionWriter == null) {
+            return false;
+        }
+        return true;
+    }
+    public static boolean bandGyroFileExists() {
+        if (mBandGyroFile == null) {
+            return false;
+        }
+        return true;
+    }
+
     public static boolean bandAccelFileExists() {
         if (mBandAccelFile == null) {
             return false;
         }
         return true;
     }
+    public static boolean lowPassFileExists() {
+        if (mLowPassFile == null) {
+            return false;
+        }
+        return true;
+    }
+    public static boolean subtractGravFileExists() {
+        if (mSubtractGravFile == null) {
+            return false;
+        }
+        return true;
+    }
+    public static boolean gyroVelocityFileExists() {
+        if (mGyroVelocityFile == null) {
+            return false;
+        }
+        return true;
+    }
+
 
 
     public void checkPermissionsExplicit() {
@@ -108,6 +178,63 @@ public class FileUtils {
         mediaFile.mkdirs();
         mBandAccelFile = new File(mediaFile, "band_accel.txt");
         mBandGyroFile = new File(mediaFile, "band_gyro.txt");
+        mPositionFile = new File(mediaFile, "position_data.csv");
+        mGyroVelocityFile = new File(mediaFile, "gyro_velocity.csv");
+        mSubtractGravFile = new File(mediaFile, "sub_grav.csv");
+        mLowPassFile = new File(mediaFile, "low_pass.csv");
+
+
+        try {
+            mBandAccelWriter = new PrintWriter(new BufferedWriter(new FileWriter(mBandAccelFile), 8192));
+            mBandGyroWriter = new PrintWriter(new BufferedWriter(new FileWriter(mBandGyroFile), 8192));
+            mPositionWriter = new PrintWriter(new BufferedWriter(new FileWriter(mPositionFile), 8192));
+            mSubtractGravWriter = new PrintWriter(new BufferedWriter(new FileWriter(mSubtractGravFile), 8192));
+            mLowPassWriter = new PrintWriter(new BufferedWriter(new FileWriter(mLowPassFile), 8192));
+            mGyroVelocityWriter = new PrintWriter(new BufferedWriter(new FileWriter(mGyroVelocityFile), 8192));
+
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            Log.i(TAG, "******* File not found. Did you" +
+                    " add a WRITE_EXTERNAL_STORAGE permission to the   manifest?");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void closeSDFile() {
+        if ((mBandGyroWriter != null) && (mBandAccelWriter != null)
+                                        && (mLowPassWriter != null)
+                                        && (mSubtractGravWriter != null)
+                                        && (mGyroVelocityWriter != null)
+                                        && (mPositionWriter != null)) {
+            try {
+                mBandAccelWriter.close();
+                mBandGyroWriter.close();
+                mGyroVelocityWriter.close();
+                mLowPassWriter.close();
+                mPositionWriter.close();
+                mSubtractGravWriter.close();
+            } catch (Exception e) {
+
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+
+    public void closeLocalFileWindows() {
+        //get base URI
+        File root = android.os.Environment.getExternalStorageDirectory();
+        //mResultsView.append("\nExternal file system root: " + root);
+        mUIAsyncUtils.appendToUI(R.id.results, "\nExternal file system root: " + root);
+
+        //set file up for writing
+        File mediaFile = new File(mainActivity.getApplicationContext().getExternalCacheDir(), "SensorData");
+        mediaFile.mkdirs();
+        mBandAccelFile = new File(mediaFile, "band_accel.txt");
+        mBandGyroFile = new File(mediaFile, "band_gyro.txt");
         try {
             mBandAccelWriter = new PrintWriter(new BufferedWriter(new FileWriter(mBandAccelFile), 8192));
             mBandGyroWriter = new PrintWriter(new BufferedWriter(new FileWriter(mBandGyroFile), 8192));
@@ -125,18 +252,5 @@ public class FileUtils {
     }
 
 
-    public void closeSDFile() {
-        if ((mBandGyroWriter != null) && (mBandAccelWriter != null)) {
-            try {
-                mBandAccelWriter.close();
-                mBandGyroWriter.close();
-            } catch (Exception e) {
-
-                e.printStackTrace();
-            }
-        }
-        //mResultsView.append("\n\nFile written to " + mBandAccelFile + "\n");
-        //mResultsView.append("\n\nFile written to " + mBandGyroFile);
-    }
 
 }

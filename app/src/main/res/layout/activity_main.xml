@@ -23,8 +23,8 @@
         android:layout_height="wrap_content"
         />
     <Button
-        android:id="@+id/view_data"
-        android:text="@string/view_data"
+        android:id="@+id/stop"
+        android:text="@string/stop"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         />

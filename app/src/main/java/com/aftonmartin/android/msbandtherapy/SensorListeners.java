@@ -1,6 +1,8 @@
 package com.aftonmartin.android.msbandtherapy;
 
 import android.app.Activity;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 
 import com.microsoft.band.BandClient;;
 import com.microsoft.band.BandIOException;
@@ -12,6 +14,7 @@ import com.microsoft.band.sensors.SampleRate;
 
 public class SensorListeners {
     private static final int MAX_ENTRIES = 400;
+    private static Algorithm.MOVEMENT_STATE movementStatus;
     private static int mEntriesToWrite = MAX_ENTRIES;
     private BandClient mBandClient = null;
     private SensorModel mRawAccelData;
@@ -19,11 +22,13 @@ public class SensorListeners {
     SensorModel noGravData = null;
     private static SensorListeners mSensorListeners = null;
     Activity mCallerActivity = null;
+    final ToneGenerator tg = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 50);
 
 
     protected SensorListeners() {
         mRawAccelData = new SensorModel();
         mRawGyroData = new SensorModel();
+
     }
 
     public synchronized static SensorListeners getInstance() {
@@ -49,26 +54,10 @@ public class SensorListeners {
         @Override
         public void onBandAccelerometerChanged(final BandAccelerometerEvent event) {
             if (event != null && FileUtils.getInstance().bandAccelWriterExists()) {
-                if (mEntriesToWrite > 0) {
                     mRawAccelData.pushAll(event.getAccelerationX(), event.getAccelerationY(), event.getAccelerationZ(), event.getTimestamp());
-
-                    //FileUtils.getInstance().getBandAccelWriter().println(String.format(" X = %.3f  Y = %.3f Z = %.3f Time = %3d", accelX, accelY, accelZ, delay));
+                    FileUtils.getInstance().getBandAccelWriter().println(String.format("%.6f,%.6f,%.6f,%3d", event.getAccelerationX(),
+                            event.getAccelerationY(), event.getAccelerationZ(), event.getTimestamp()));
                     UIAsyncUtils.getInstance().appendToUI(R.id.textView3, "x: " + event.getAccelerationX() + "\ny: " + event.getAccelerationY() + "\nz: " + event.getAccelerationZ());
-
-                    mEntriesToWrite--;
-                } else {
-                    unregisterListeners();
-                    //subtract gravity by subtracting iteratively differences neighbor by neighbor
-                    SensorModel noGravData = Algorithm.subtractGravity(mRawGyroData);
-                    SensorModel lowPassed = Algorithm.lowPassFilter(mRawGyroData);
-                    SensorModel Velocity = Algorithm.getVelocity(noGravData);
-                    SensorModel Position = Algorithm.getPosition(Velocity);
-
-                    //then integrate by summing up each value and adding i.e. velocity0= velocity1+accel1 .....
-
-                    FileUtils.getInstance().closeSDFile();
-                    mEntriesToWrite = MAX_ENTRIES;
-                }
             }
         }
     };
@@ -78,24 +67,10 @@ public class SensorListeners {
         @Override
         public void onBandGyroscopeChanged(final BandGyroscopeEvent event) {
             if (event != null && FileUtils.getInstance().bandGyroWriterExists()) {
-
-                if (mEntriesToWrite > 0) {
-                    //FileUtils.getInstance().getBandGyroWriter().println(String.format(" X = %.3f  Y = %.3f Z = %.3f", event.getAccelerationX(), event.getAccelerationY(), event.getAccelerationZ()));
+                    FileUtils.getInstance().getGyroVelocityWriter().println(String.format("%.6f,%.6f,%.6f,%3d", event.getAngularVelocityX(), event.getAngularVelocityY(), event.getAngularVelocityZ(), event.getTimestamp()));
                     UIAsyncUtils.getInstance().appendToUI(R.id.textView4, "x: " + event.getAngularVelocityX() + "\ny: " + event.getAngularVelocityY() + "\nz: " + event.getAngularVelocityZ());
-                    mRawGyroData.pushAll(event.getAngularVelocityX(), event.getAngularVelocityY(), event.getAngularVelocityZ(), event.getTimestamp());
-                    mEntriesToWrite--;
-                } else {
-                    unregisterListeners();
-                    /*Replace with angular version or abstract process function here*/
-                    SensorModel noGravData = Algorithm.subtractGravity(mRawGyroData);
-                    SensorModel lowPassed = Algorithm.lowPassFilter(mRawGyroData);
-                    SensorModel Velocity = Algorithm.getVelocity(noGravData);
-                    SensorModel Position = Algorithm.getPosition(Velocity);
-
-                    FileUtils.getInstance().closeSDFile();
-                    mEntriesToWrite = MAX_ENTRIES;
-                }
-            }
+                    mRawGyroData.pushAll(event.getAngularVelocityX(), event.getAngularVelocityY(), event.getAngularVelocityZ(), event.getTimestamp());}
+                    beep(Algorithm.detectStatus(event.getAngularVelocityZ()));
         }
     };
 
@@ -120,4 +95,24 @@ public class SensorListeners {
             throw e;
         }
     }
+    public SensorModel getGyroData() {
+        return mRawGyroData;
+    }
+    public SensorModel getAccelData() {
+        return mRawAccelData;
+    }
+
+    public void beep(Algorithm.MOVEMENT_STATE movementStatus){
+        switch (movementStatus){
+            case AT_MAX:
+                tg.startTone(ToneGenerator.TONE_PROP_BEEP);
+                break;
+            case AT_MIN:
+                tg.startTone(ToneGenerator.TONE_PROP_BEEP2);
+                break;
+            default:
+                break;
+        }
+    }
+
 }

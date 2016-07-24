@@ -5,24 +5,36 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 public class Algorithm {
-    private Algorithm() {
-    }
+    private static Algorithm.MOVEMENT_STATE currentState = MOVEMENT_STATE.IDLE;
+    final static double OMEGA_LIMIT = 30; //threshold for peaks in velocity
+    final static double MOVEMENT_BEGIN_LIMIT = 75; //threshold for minimal movement that should count
+    final static int SUM_QUEUE_LIMIT = 20; //increase if waves are fat enough and sampling rate is high enough
+    final static double OMEGA_SUM_LIMIT = OMEGA_LIMIT * SUM_QUEUE_LIMIT;
+    private static int startCounter = 0;
+    private static double sumFloats = 0;
+    static LimitedQueue<Float>sumQueue = new LimitedQueue<Float>(SUM_QUEUE_LIMIT); //live queue for threshold summing
+    private Algorithm() {}
 
     public static SensorModel lowPassFilter(SensorModel rawInput){
         SensorModel processedData = new SensorModel();
-        ArrayList<Float>[] rawAcceleration = rawInput.getSensorData();
+        ArrayList<Float>[] rawSignal = rawInput.getSensorData();
         ArrayList<Float>[] processedAcceleration = processedData.getSensorData();
         //find alpha and compensate for phase/bias accumulation
-        final double ALPHA = 0.5;
+        final double ALPHA = 0.999;
         int min = rawInput.getMin() - 1; // in case of interruptions slowest x,y,z wins, rest of data discarded
-        float[] gravity = {0,0,0};
+        float[] lowPassValue = {0,0,0};
         for (int i = 1; i < min; i++) {
-            gravity[0] = (float) (ALPHA * gravity[0] + (1-ALPHA) * rawAcceleration[0].get(i));
-            processedAcceleration[0].add(gravity[0]);
-            gravity[1] = (float) (ALPHA * gravity[1] + (1-ALPHA) * rawAcceleration[1].get(i));
-            processedAcceleration[1].add(gravity[1]);
-            gravity[2] = (float) (ALPHA * gravity[2] + (1-ALPHA) * rawAcceleration[2].get(i));
-            processedAcceleration[2].add(gravity[2]);
+            lowPassValue[0] = (float) (ALPHA * lowPassValue[0] + (1-ALPHA) * rawSignal[0].get(i));
+            processedAcceleration[0].add(lowPassValue[0]);
+            lowPassValue[1] = (float) (ALPHA * lowPassValue[1] + (1-ALPHA) * rawSignal[1].get(i));
+            processedAcceleration[1].add(lowPassValue[1]);
+            lowPassValue[2] = (float) (ALPHA * lowPassValue[2] + (1-ALPHA) * rawSignal[2].get(i));
+            processedAcceleration[2].add(lowPassValue[2]);
+
+
+
+            FileUtils.getLowPassWriter().println(String.format("%.6f,%.6f,%.6f", lowPassValue[0], lowPassValue[1], lowPassValue[2]));
+
         }
 
         return processedData;
@@ -37,6 +49,9 @@ public class Algorithm {
             processedAcceleration[0].add(rawAcceleration[0].get(i + 1) - rawAcceleration[0].get(i));
             processedAcceleration[1].add(rawAcceleration[1].get(i + 1) - rawAcceleration[1].get(i));
             processedAcceleration[2].add(rawAcceleration[2].get(i + 1) - rawAcceleration[2].get(i));
+            FileUtils.getSubtractGravWriter().println(String.format("%.6f,%.6f,%.6f", rawAcceleration[0].get(i + 1) - rawAcceleration[0].get(i),
+                    rawAcceleration[1].get(i + 1) - rawAcceleration[1].get(i), rawAcceleration[2].get(i + 1) - rawAcceleration[2].get(i)));
+
         }
         return processedData;
     }
@@ -77,9 +92,12 @@ public class Algorithm {
             processedPositions[1].add(positionY);
             positionZ = positionZ + velocityData[2].get(i);
             processedPositions[2].add(positionZ);
+            FileUtils.getPositionWriter().println(String.format("%.6f,%.6f,%.6f", positionX, positionY, positionZ));
         }
         return calculatedPosition;
     }
+
+
 
     public ArrayList<Long> getTimeDelays(SensorModel sensorModel){
         ArrayList<Long> processedDelays = new ArrayList<Long>();
@@ -88,6 +106,77 @@ public class Algorithm {
         }
         return processedDelays;
     }
+
+
+        public enum MOVEMENT_STATE {
+            IDLE, DETECT_INCREASE, FIND_MIN, AT_MIN, FIND_MAX, AT_MAX
+        }
+
+        public static Algorithm.MOVEMENT_STATE detectStatus(float pitchVelocity){
+            sumQueue.add(pitchVelocity);
+            sumFloats = sumFloats();
+            switch(currentState){
+                case IDLE:
+                    if(Math.abs(pitchVelocity) > MOVEMENT_BEGIN_LIMIT) { //must happen four consecutive times or reset
+                        startCounter += 1;
+                        if(startCounter > 4){
+                            currentState = MOVEMENT_STATE.FIND_MIN;
+                            startCounter = 0;
+                        }
+                    } else {
+                        startCounter = 0;
+                    }
+                    break;
+
+                case FIND_MIN:
+                    if(pitchVelocity < -OMEGA_LIMIT){
+                        if(sumFloats < -OMEGA_SUM_LIMIT) {
+                            currentState = MOVEMENT_STATE.AT_MIN;
+                            //forwardPeak = j; better for logging later
+                        }
+                    }
+                    break;
+                case AT_MIN:
+                    currentState = MOVEMENT_STATE.FIND_MAX;
+                    break;
+                case FIND_MAX:
+                    if((pitchVelocity > OMEGA_LIMIT) && sumFloats > OMEGA_SUM_LIMIT){
+                        currentState = MOVEMENT_STATE.AT_MAX;
+                        //backPeak = j; better for logging later
+                        //motionCounter += 1 "..."
+                        //log forward_back((i-1)*20+motion_counter,:)=[i,motion_counter,forward_peak,back_peak];
+                    }
+                    break;
+                case AT_MAX:
+                    currentState = MOVEMENT_STATE.DETECT_INCREASE;
+                    break;
+                case DETECT_INCREASE:
+                    if (Math.abs(pitchVelocity) < 0.05){
+                        currentState = MOVEMENT_STATE.IDLE;
+                    }
+                    break;
+                default:
+                    break;
+
+
+            }
+            return  currentState;
+        }
+
+        private static float sumFloats(){
+            float sum = 0;
+            for(int i=0; i < sumQueue.size(); i++){
+                sum += sumQueue.get(i);
+            }
+            int test = sumQueue.size();
+            if(sumQueue.size() > 4 && sum < -150){
+                int jesuschrist = 3;
+                int boolablablu = 3;
+                double jjj = jesuschrist / boolablablu;
+                return sum;
+            }
+            return sum;
+        }
 
 
 }
