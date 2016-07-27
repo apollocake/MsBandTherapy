@@ -87,7 +87,7 @@ public class SensorListeners {
 
     public void registerListeners() throws BandIOException {
         try {
-            mBandClient.getSensorManager().registerAccelerometerEventListener(mBandAccelerometerEventListener, SampleRate.MS16);
+            mBandClient.getSensorManager().registerAccelerometerEventListener(mBandAccelerometerEventListener, SampleRate.MS16); //average sample rate every 16s
             mBandClient.getSensorManager().registerGyroscopeEventListener(mBandGyroscopeEventListener, SampleRate.MS16);
         } catch (BandIOException e) {
             throw e;

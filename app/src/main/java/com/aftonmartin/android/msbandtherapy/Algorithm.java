@@ -20,7 +20,7 @@ public class Algorithm {
         ArrayList<Float>[] rawSignal = rawInput.getSensorData();
         ArrayList<Float>[] processedAcceleration = processedData.getSensorData();
         //find alpha and compensate for phase/bias accumulation
-        final double ALPHA = 0.999;
+        final double ALPHA = 0.8;
         int min = rawInput.getMin() - 1; // in case of interruptions slowest x,y,z wins, rest of data discarded
         float[] lowPassValue = {0,0,0};
         for (int i = 1; i < min; i++) {
@@ -79,25 +79,33 @@ public class Algorithm {
     public static SensorModel getPosition(SensorModel velocityInput){
         SensorModel calculatedPosition = new SensorModel();
         ArrayList<Float>[] velocityData = velocityInput.getSensorData();
+        ArrayList<Long> timeData = velocityInput.getTimeData();
         ArrayList<Float>[] processedPositions = calculatedPosition.getSensorData();
         int min = velocityInput.getMin(); // in case of interruptions slowest x,y,z wins, rest of data discarded
         float positionX = 0;
         float positionY = 0;
         float positionZ = 0;
+        long timeDelay = 0;
+        float currentPosition = 0;
 
-        for (int i = 0; i < min; i++) {
-            positionX = positionX + velocityData[0].get(i);
-            processedPositions[0].add(positionX);
-            positionY = positionY + velocityData[1].get(i);
-            processedPositions[1].add(positionY);
-            positionZ = positionZ + velocityData[2].get(i);
-            processedPositions[2].add(positionZ);
-            FileUtils.getInstance().getPositionWriter().println(String.format("%.6f,%.6f,%.6f", positionX, positionY, positionZ));
+
+        for (int i = 1; i < min ; i++) {
+            timeDelay = timeData.get(i) - timeData.get(i-1);
+            //throw away data if no delay between last event
+            if(timeDelay != 0){
+                positionX =  0.001f * (((velocityData[0].get(i-1)+ velocityData[0].get(i)) * timeDelay) / 2);
+                processedPositions[0].add(positionX);
+                positionY = 0.001f * (((velocityData[1].get(i-1)+ velocityData[1].get(i)) * timeDelay) / 2);
+                processedPositions[1].add(positionY);
+                positionZ = 0.001f * (((velocityData[2].get(i-1)+ velocityData[2].get(i)) * timeDelay) / 2);
+                processedPositions[2].add(positionZ);
+                currentPosition += positionZ;
+                FileUtils.getInstance().getPositionWriter().println(String.format("%.6f,%.6f,%.6f", positionX, positionY, currentPosition));
+
+            }
         }
         return calculatedPosition;
     }
-
-
 
     public ArrayList<Long> getTimeDelays(SensorModel sensorModel){
         ArrayList<Long> processedDelays = new ArrayList<Long>();
@@ -146,7 +154,7 @@ public class Algorithm {
                     UIAsyncUtils.getInstance().appendToUI(R.id.angleState, "FIND_MAX");
                     if((pitchVelocity > OMEGA_LIMIT) && sumFloats > OMEGA_SUM_LIMIT){
                         currentState = MOVEMENT_STATE.AT_MAX;
-                        //backPeak = j; better for logging later
+                        //backPeak = j; better for logging- implement in caller
                         //motionCounter += 1 "..."
                         //log forward_back((i-1)*20+motion_counter,:)=[i,motion_counter,forward_peak,back_peak];
                     }

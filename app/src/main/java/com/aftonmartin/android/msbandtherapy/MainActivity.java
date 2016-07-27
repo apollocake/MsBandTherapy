@@ -66,9 +66,9 @@ public class MainActivity extends Activity {
                 SensorListeners.getInstance().unregisterListeners();
                 SensorModel rawGyroData = SensorListeners.getInstance().getGyroData();
                 SensorModel noGravData = Algorithm.subtractGravity(rawGyroData);
-                SensorModel lowPassed = Algorithm.lowPassFilter(rawGyroData);
-                SensorModel lowPassed2 = Algorithm.lowPassFilter(lowPassed);
                 SensorModel Position = Algorithm.getPosition(rawGyroData);
+                SensorModel lowPassed = Algorithm.lowPassFilter(Position);
+                SensorModel lowPassed2 = Algorithm.lowPassFilter(lowPassed);
                 FileUtils.getInstance().closeSDFile();
             }
         });
