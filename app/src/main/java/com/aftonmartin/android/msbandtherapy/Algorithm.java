@@ -93,14 +93,13 @@ public class Algorithm {
             timeDelay = timeData.get(i) - timeData.get(i-1);
             //throw away data if no delay between last event
             if(timeDelay != 0){
-                positionX =  0.001f * (((velocityData[0].get(i-1)+ velocityData[0].get(i)) * timeDelay) / 2);
+                positionX +=  0.001f * (((velocityData[0].get(i-1)+ velocityData[0].get(i)) * timeDelay) / 2);
                 processedPositions[0].add(positionX);
-                positionY = 0.001f * (((velocityData[1].get(i-1)+ velocityData[1].get(i)) * timeDelay) / 2);
+                positionY += 0.001f * (((velocityData[1].get(i-1)+ velocityData[1].get(i)) * timeDelay) / 2);
                 processedPositions[1].add(positionY);
-                positionZ = 0.001f * (((velocityData[2].get(i-1)+ velocityData[2].get(i)) * timeDelay) / 2);
+                positionZ += 0.001f * (((velocityData[2].get(i-1)+ velocityData[2].get(i)) * timeDelay) / 2);
                 processedPositions[2].add(positionZ);
-                currentPosition += positionZ;
-                FileUtils.getInstance().getPositionWriter().println(String.format("%.6f,%.6f,%.6f", positionX, positionY, currentPosition));
+                FileUtils.getInstance().getPositionWriter().println(String.format("%.6f,%.6f,%.6f", positionX, positionY, positionZ));
 
             }
         }
