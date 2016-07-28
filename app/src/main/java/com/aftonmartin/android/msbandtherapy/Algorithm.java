@@ -76,6 +76,7 @@ public class Algorithm {
         return calculatedVelocity;
     }
 
+    //trapesoidal approximation of the integral
     public static SensorModel getPosition(SensorModel velocityInput){
         SensorModel calculatedPosition = new SensorModel();
         ArrayList<Float>[] velocityData = velocityInput.getSensorData();
@@ -93,6 +94,8 @@ public class Algorithm {
             timeDelay = timeData.get(i) - timeData.get(i-1);
             //throw away data if no delay between last event
             if(timeDelay != 0){
+                //0.001f is to scale deg/ms to deg/s
+                //Trapesoidal approx ((base1 + base2) * height) / 2
                 positionX +=  0.001f * (((velocityData[0].get(i-1)+ velocityData[0].get(i)) * timeDelay) / 2);
                 processedPositions[0].add(positionX);
                 positionY += 0.001f * (((velocityData[1].get(i-1)+ velocityData[1].get(i)) * timeDelay) / 2);
