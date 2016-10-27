@@ -19,11 +19,12 @@ public class SensorListeners {
     private BandClient mBandClient = null;
     private SensorModel mRawAccelData;
     private SensorModel mRawGyroData;
+    private static int movementCounter = 0;
     SensorModel noGravData = null;
     private static SensorListeners mSensorListeners = null;
     Activity mCallerActivity = null;
     final ToneGenerator tg = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 50);
-
+    float tempAngVelZ;
 
     protected SensorListeners() {
         mRawAccelData = new SensorModel();
@@ -70,7 +71,12 @@ public class SensorListeners {
                     FileUtils.getInstance().getGyroVelocityWriter().println(String.format("%.6f,%.6f,%.6f,%3d", event.getAngularVelocityX(), event.getAngularVelocityY(), event.getAngularVelocityZ(), event.getTimestamp()));
                     UIAsyncUtils.getInstance().appendToUI(R.id.textView4, "x: " + event.getAngularVelocityX() + "\ny: " + event.getAngularVelocityY() + "\nz: " + event.getAngularVelocityZ());
                     mRawGyroData.pushAll(event.getAngularVelocityX(), event.getAngularVelocityY(), event.getAngularVelocityZ(), event.getTimestamp());}
-                    beep(Algorithm.detectStatus(event.getAngularVelocityZ()));
+                    tempAngVelZ = event.getAngularVelocityZ();
+                    beep(Algorithm.detectStatus(tempAngVelZ));
+                    if(Algorithm.detectStatus(tempAngVelZ) == Algorithm.MOVEMENT_STATE.AT_MIN){
+                        movementCounter++;
+                        UIAsyncUtils.getInstance().appendToUI(R.id.textView5, "Movements: " + movementCounter);
+                    }
         }
     };
 

@@ -20,6 +20,7 @@ public class MainActivity extends Activity {
 
     private SensorListeners mSensorListeners = new SensorListeners();
     SensorSubscriptionTask aTask = null;
+    private TextView mMovCounterText;
 
 
     @Override
@@ -29,6 +30,7 @@ public class MainActivity extends Activity {
         //wire up view
         mAccelDataText = (TextView) findViewById(R.id.textView3);
         mGyroDataText = (TextView) findViewById(R.id.textView4);
+        mMovCounterText = (TextView) findViewById(R.id.textView5);
         mStartButton = (Button) findViewById(R.id.start);
         mStopButton = (Button) findViewById(R.id.stop);
         mBeepButton = (Button) findViewById(R.id.beep);
