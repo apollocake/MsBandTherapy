@@ -51,7 +51,7 @@ public class MainActivity extends Activity {
             public void onClick(View view) {
                 FileUtils.getInstance().checkPermissionsExplicit();
                 FileUtils.getInstance().openSDFile();
-                //blah blah GO ASYNC!
+                //Must do heavy processing off the Main/UI thread to prevent blocking
                 if (aTask == null || AsyncTask.Status.FINISHED == aTask.getStatus()) {
                     aTask = new SensorSubscriptionTask(MainActivity.this);
                     aTask.execute();
@@ -68,6 +68,7 @@ public class MainActivity extends Activity {
                 SensorModel noGravData = Algorithm.subtractGravity(rawGyroData);
                 SensorModel Position = Algorithm.getPosition(rawGyroData);
                 SensorModel lowPassed = Algorithm.lowPassFilter(Position);
+                SensorModel Biased = Algorithm.biasRemoval(Position);
                 SensorModel lowPassed2 = Algorithm.lowPassFilter(lowPassed);
                 FileUtils.getInstance().closeSDFile();
             }
