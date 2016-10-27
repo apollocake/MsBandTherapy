@@ -13,6 +13,7 @@ public class Algorithm {
     private static int startCounter = 0;
     private static double sumFloats = 0;
     static LimitedQueue<Float>sumQueue = new LimitedQueue<Float>(SUM_QUEUE_LIMIT); //live queue for threshold summing
+
     private Algorithm() {}
 
     public static SensorModel lowPassFilter(SensorModel rawInput){
@@ -107,6 +108,46 @@ public class Algorithm {
             }
         }
         return calculatedPosition;
+    }
+
+    public static SensorModel biasRemoval(SensorModel rawInput){
+        ArrayList<Float>[] rawSignal = rawInput.getSensorData();
+
+        SensorModel processedData = new SensorModel();
+        ArrayList<Float>[] processedBias = processedData.getSensorData();
+        //find alpha and compensate for bias accumulation
+
+        float biasXTotal = rawSignal[0].get(rawSignal[0].size() - 1) - rawSignal[0].get(0);
+        float biasXDelta = biasXTotal / rawSignal[0].size();
+
+        float biasYTotal = rawSignal[1].get(rawSignal[1].size() - 1) - rawSignal[1].get(0);
+        float biasYDelta = biasYTotal / rawSignal[1].size();
+
+        float biasZTotal = rawSignal[2].get(rawSignal[2].size() - 1) - rawSignal[2].get(0);
+        float biasZDelta = biasZTotal / rawSignal[2].size();
+
+        int min = rawInput.getMin() - 1; // in case of interruptions slowest x,y,z wins, rest of data discarded
+        float[] biasFreePiece = {0,0,0};
+		//! -- need to go backwards in this loop!
+        for (int i = min-1; i > -1; i--) {
+            biasFreePiece[0] = rawSignal[0].get(i) - biasXTotal;
+            processedBias[0].add(biasFreePiece[0]);
+            biasXTotal = biasXTotal - biasXDelta;
+            biasFreePiece[1] = rawSignal[1].get(i) - biasYTotal;
+            processedBias[1].add(biasFreePiece[1]);
+            biasYTotal = biasYTotal - biasYDelta;
+            biasFreePiece[2] = rawSignal[2].get(i) - biasZTotal;
+            processedBias[2].add(biasFreePiece[2]);
+            biasZTotal = biasZTotal - biasZDelta;
+
+
+
+            //make BIAS WRITTER!!!!!!
+            FileUtils.getInstance().getBiasWriter().println(String.format("%.6f,%.6f,%.6f", biasFreePiece[0], biasFreePiece[1], biasFreePiece[2]));
+
+        }
+
+        return processedData;
     }
 
     public ArrayList<Long> getTimeDelays(SensorModel sensorModel){

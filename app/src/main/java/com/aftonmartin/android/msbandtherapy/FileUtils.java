@@ -16,6 +16,7 @@ public class FileUtils {
     private static PrintWriter mBandAccelWriter = null;
     private static PrintWriter mBandGyroWriter = null;
     private static PrintWriter mLowPassWriter = null;
+    private static PrintWriter mBiasWriter = null;
     private static PrintWriter mSubtractGravWriter = null;
     private static PrintWriter mGyroVelocityWriter = null;
     private static PrintWriter mPositionWriter = null;
@@ -23,6 +24,7 @@ public class FileUtils {
     private static File mBandAccelFile = null;
     private static File mBandGyroFile = null;
     private static File mLowPassFile = null;
+    private static File mBiasFile = null;
     private static File mSubtractGravFile = null;
     private static File mGyroVelocityFile = null;
     private static File mPositionFile = null;
@@ -58,6 +60,9 @@ public class FileUtils {
     }
     public static PrintWriter getLowPassWriter() {
         return mLowPassWriter;
+    }
+    public static PrintWriter getBiasWriter() {
+        return mBiasWriter;
     }
 
     public static PrintWriter getSubtractGravWriter() {
@@ -182,6 +187,7 @@ public class FileUtils {
         mGyroVelocityFile = new File(mediaFile, "gyro_velocity.csv");
         mSubtractGravFile = new File(mediaFile, "sub_grav.csv");
         mLowPassFile = new File(mediaFile, "low_pass.csv");
+        mBiasFile = new File(mediaFile, "bias_removal.csv");
 
         try {
             mBandAccelWriter = new PrintWriter(new BufferedWriter(new FileWriter(mBandAccelFile), 8192));
@@ -189,6 +195,7 @@ public class FileUtils {
             mPositionWriter = new PrintWriter(new BufferedWriter(new FileWriter(mPositionFile), 8192));
             mSubtractGravWriter = new PrintWriter(new BufferedWriter(new FileWriter(mSubtractGravFile), 8192));
             mLowPassWriter = new PrintWriter(new BufferedWriter(new FileWriter(mLowPassFile), 8192));
+            mBiasWriter = new PrintWriter(new BufferedWriter(new FileWriter(mBiasFile), 8192));
             mGyroVelocityWriter = new PrintWriter(new BufferedWriter(new FileWriter(mGyroVelocityFile), 8192));
 
 
@@ -204,6 +211,7 @@ public class FileUtils {
     public void closeSDFile() {
         if ((mBandGyroWriter != null) && (mBandAccelWriter != null)
                                         && (mLowPassWriter != null)
+                                        && (mBiasWriter != null)
                                         && (mSubtractGravWriter != null)
                                         && (mGyroVelocityWriter != null)
                                         && (mPositionWriter != null)) {
@@ -212,6 +220,7 @@ public class FileUtils {
                 mBandGyroWriter.close();
                 mGyroVelocityWriter.close();
                 mLowPassWriter.close();
+                mBiasWriter.close();
                 mPositionWriter.close();
                 mSubtractGravWriter.close();
             } catch (Exception e) {
@@ -223,6 +232,7 @@ public class FileUtils {
         mBandGyroWriter= null;
         mGyroVelocityWriter= null;
         mLowPassWriter = null;
+        mBiasWriter = null;
         mPositionWriter = null;
         mSubtractGravWriter = null;
 
